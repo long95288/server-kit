@@ -1,0 +1,6 @@
+_output/
+db/
+*.idea/
+doc/
+git-server/
+logs/

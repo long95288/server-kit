@@ -1,0 +1,43 @@
+POST http://localhost:8899/api/v1/file/delete
+Content-Type: application/json
+
+{
+   "filename":"api.http"
+}
+
+###
+###
+POST http://localhost:8899/api/v1/file/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="api.http"
+
+< ./api.http
+--WebAppBoundary--
+
+###
+POST http://localhost:8899/api/v1/file/list
+Content-Type: application/json
+
+{}
+
+###
+POST http://localhost:8899/api/v1/git/list
+Content-Type: application/json
+
+{}
+
+###
+POST http://localhost:8899/api/v1/git/add
+Content-Type: application/json
+
+{
+ "name": "sample"
+}
+
+###
+
+
+
+
