@@ -8,12 +8,26 @@ import (
 
 	"log"
 	"server-kit/server"
+	"server-kit/server/config"
+	"server-kit/server/dao"
 )
+
+var configPath = flag.String("config", "", "the config file path")
 
 func main() {
 	flag.Parse()
 
-	err := server.InitOrm()
+	var err error
+	if configPath == nil || *configPath == "" {
+		log.Fatal("Need set config")
+	}
+
+	err = config.LoadConfig(*configPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = dao.InitOrm()
 	if err != nil {
 		log.Fatal(err)
 	}

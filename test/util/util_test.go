@@ -2,20 +2,20 @@ package util
 
 import (
 	"log"
-	"simple-chatroom/server"
+	"server-kit/server/module"
 	"testing"
 )
 
 func TestNewGitProject(t *testing.T) {
-	err := server.NewGitProject("sample2", "./")
+	err := module.NewGitProject("sample2", "./")
 	if err != nil {
 		log.Println(err)
 	}
-	server.NewGitProject("sample.git", "./")
+	moudle.NewGitProject("sample.git", "./")
 }
 
 func TestGetGitProjectList(t *testing.T) {
-	list, err := server.GetGitProjectList("./")
+	list, err := moudle.GetGitProjectList("./")
 	log.Println(list)
 	log.Println(err)
 }

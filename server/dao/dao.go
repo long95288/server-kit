@@ -1,10 +1,13 @@
-package server
+package dao
 
 import (
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
+	"path"
+	"server-kit/server/config"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 	"xorm.io/xorm"
 )
 
@@ -19,11 +22,11 @@ var engine *xorm.Engine
 
 func InitOrm() error {
 	var err error
-	err = os.MkdirAll("./db/", os.ModePerm)
+	err = os.MkdirAll(config.SrvConf.MsgDBPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
-	engine, err = xorm.NewEngine("sqlite3", "./db/msg.db")
+	engine, err = xorm.NewEngine("sqlite3", path.Join(config.SrvConf.MsgDBPath, "msg.db"))
 	if nil != err {
 		return err
 	}

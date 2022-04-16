@@ -1,55 +1,19 @@
 package server
 
 import (
-	"flag"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
-	"github.com/rakyll/statik/fs"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path"
+	"server-kit/server/config"
+	"server-kit/server/module"
+	"server-kit/server/util"
 	_ "server-kit/statik"
-	"sync"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rakyll/statik/fs"
 )
-
-var connMap = map[*websocket.Conn]chan int{}
-var connLock = sync.Mutex{}
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		log.Println("request from ", r.RemoteAddr, "pass")
-		return true
-	},
-}
-var addr = flag.String("addr", "0.0.0.0:8899", "Service addr")
-var docPath = flag.String("doc_path", "./doc", "save path")
-var authUsername = flag.String("username", "admin", "username for auth")
-var authPassword = flag.String("password", "admin1234", "password for auth")
-var gitProjectPath = flag.String("git_project_path", "./git-server", "git server project path")
-var logPath = flag.String("log_path", "./logs", "server log save path")
-
-func SendMsgForEachConn(data []byte) {
-	connLock.Lock()
-	for conn, ch := range connMap {
-		err := conn.WriteMessage(websocket.TextMessage, data)
-		if err != nil {
-			close(ch)
-			delete(connMap, conn)
-		}
-	}
-	connLock.Unlock()
-}
-
-func CloseAllConn() {
-	connLock.Lock()
-	for conn, ch := range connMap {
-		close(ch)
-		delete(connMap, conn)
-	}
-	connLock.Unlock()
-}
 
 // 处理跨域请求,支持options访问
 func Cors() gin.HandlerFunc {
@@ -72,36 +36,32 @@ func Cors() gin.HandlerFunc {
 }
 
 func Auth() gin.HandlerFunc {
-	return gin.BasicAuth(gin.Accounts{*authUsername: *authPassword})
+	accounts := gin.Accounts{}
+	for _, user := range config.SrvConf.Users {
+		accounts[user.Username] = user.Password
+	}
+	return gin.BasicAuth(accounts)
 }
 
 func InitPath() {
-	log.Println("doc_path: ", GetSavePath(""))
-	log.Println("delete_path: ", GetDeletePath(""))
-	err := os.MkdirAll(GetSavePath(""), os.ModePerm)
+	log.Println("doc_path: ", util.GetSavePath(""))
+	log.Println("delete_path: ", util.GetDeletePath(""))
+	err := os.MkdirAll(util.GetSavePath(""), os.ModePerm)
 	if nil != err {
 		log.Println(err)
 	}
-	//err = os.Chmod(GetSavePath(""), os.ModePerm)
-	//if nil != err {
-	//	log.Println(err)
-	//}
 
-	err = os.MkdirAll(GetDeletePath(""), os.ModePerm)
+	err = os.MkdirAll(util.GetDeletePath(""), os.ModePerm)
 	if nil != err {
 		log.Println(err)
 	}
-	//err = os.Chmod(GetDeletePath(""), os.ModePerm)
-	//if nil != err {
-	//	log.Println(err)
-	//}
 
-	err = os.MkdirAll(*gitProjectPath, os.ModePerm)
+	err = os.MkdirAll(config.SrvConf.GitProjectPath, os.ModePerm)
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = os.MkdirAll(*logPath, os.ModePerm)
+	err = os.MkdirAll(config.SrvConf.LogPath, os.ModePerm)
 	if err != nil {
 		log.Println(err)
 	}
@@ -111,13 +71,14 @@ var Logfile *os.File = nil
 
 func InitLog() {
 	var err error
-	Logfile, err = os.OpenFile(path.Join(*logPath, "log.txt"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	Logfile, err = os.OpenFile(path.Join(config.SrvConf.LogPath, "log.txt"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	log.SetOutput(Logfile)
 }
+
 func DeInitLog() {
 	log.SetOutput(os.Stdout)
 	_ = Logfile.Close()
@@ -125,7 +86,11 @@ func DeInitLog() {
 
 func StartServer() error {
 	InitPath()
+
 	InitLog()
+	defer func() {
+		DeInitLog()
+	}()
 
 	// 静态文件服务器
 	statikFS, err := fs.New()
@@ -148,19 +113,26 @@ func StartServer() error {
 		context.Redirect(http.StatusPermanentRedirect, "/assets/index.html")
 	})
 
-	e.Any("/api/v1/chatroom/online", ChatroomOnlineWsHandler)
-	e.POST("/api/v1/chatroom/history", ChatroomHistoryHandler)
+	e.Any("/api/v1/chatroom/online", module.ChatroomOnlineWsHandler)
+	e.POST("/api/v1/chatroom/history", module.ChatroomHistoryHandler)
 
-	e.POST("/api/v1/file/list", FileListHandler)
-	e.POST("/api/v1/file/upload", FileUploadHandler)
-	e.POST("/api/v1/file/delete", FileDeleteHandler)
+	e.POST("/api/v1/file/list", module.FileListHandler)
+	e.POST("/api/v1/file/upload", module.FileUploadHandler)
+	e.POST("/api/v1/file/delete", module.FileDeleteHandler)
 
-	e.POST("/api/v1/git/list", GitListHandler)
-	e.POST("/api/v1/git/add", GitAddHandler)
+	e.POST("/api/v1/git/list", module.GitListHandler)
+	e.POST("/api/v1/git/add", module.GitAddHandler)
 
 	e.StaticFS("/assets/", statikFS)
-	e.StaticFS("/download", http.Dir(""+*docPath))
-	err = e.Run(*addr)
-	DeInitLog()
+	e.StaticFS("/download", http.Dir(""+config.SrvConf.DocPath))
+
+	if config.SrvConf.TLSAble {
+		log.Printf("run server with TLS addr:%s\n", config.SrvConf.Addr)
+		err = e.RunTLS(config.SrvConf.Addr, config.SrvConf.TLSCert, config.SrvConf.TLSKey)
+	} else {
+		log.Printf("run server with no TLS addr:%s\n", config.SrvConf.Addr)
+		err = e.Run(config.SrvConf.Addr)
+	}
+
 	return err
 }

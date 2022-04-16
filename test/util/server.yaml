@@ -1,0 +1,13 @@
+addr: "0.0.0.0:8088"
+tls_able: false
+tls_cert: cert.pem
+tls_key: key.pem
+doc_path: ./_output/docs
+git_project_path: ./_output/git-server
+msg_db_path: ./_output/db
+log_path: ./_output/log
+users:
+  - username: visitor
+    password: visitor
+  - username: visitor2
+    password: visitor2

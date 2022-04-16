@@ -4,3 +4,5 @@ db/
 doc/
 git-server/
 logs/
+/config/
+server-kit

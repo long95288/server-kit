@@ -1,14 +1,18 @@
-package server
+package util
 
 import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"server-kit/server/config"
 	"sort"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type GitProjectItem struct {
@@ -62,4 +66,26 @@ func GetGitProjectList(dir string) ([]GitProjectItem, error) {
 		}
 	}
 	return list, nil
+}
+
+func GetSavePath(filename string) string {
+	return path.Join(config.SrvConf.DocPath, filename)
+}
+
+func GetDeletePath(filename string) string {
+	return path.Join(config.SrvConf.DocPath, "/delete", filename)
+}
+
+func ResponseError(ctx *gin.Context, err error) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":     -1,
+		"code_msg": err.Error(),
+	})
+}
+func ResponseSuccess(ctx *gin.Context, obj interface{}) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":     0,
+		"code_msg": "",
+		"body":     obj,
+	})
 }
