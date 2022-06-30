@@ -93,6 +93,7 @@
 <script>
 const axios = require('axios');
 const defaultChatUrl = `ws://${location.host}/api/v1/chatroom/online`;
+const url_prefix = "server-kit"
 export default {
   data: function() {
     return {
@@ -113,6 +114,9 @@ export default {
   },
   created() {
     this.serverInfo.chatUrl = "ws://" + location.host + "/api/v1/chatroom/online";
+    if(0 === location.href.lastIndexOf("https://")) {
+       this.serverInfo.chatUrl = "wss://" + location.host + "/api/v1/chatroom/online";
+    }
     this.connectServer();
   },
   methods: {
@@ -135,7 +139,7 @@ export default {
     },
     loadHistoryMsg(pageNum, pageSize) {
       console.log("Load History");
-      axios.post('/api/v1/chatroom/history',
+      axios.post(`${url_prefix}/api/v1/chatroom/history`,
           {
             "page_num": pageNum,
             "page_size": pageSize
@@ -172,7 +176,7 @@ export default {
       this.ws.send(this.inputText);
     },
     freshGitProjectList() {
-      axios.post("/api/v1/git/list", {})
+      axios.post(`${url_prefix}/api/v1/git/list`, {})
       .then(resp => {
         this.gitProjectList = resp.data.body.list;
       })
@@ -182,7 +186,7 @@ export default {
     },
     createNewGitProject() {
       if ('' !== this.newGitProjectName && undefined !== this.newGitProjectName && null !== this.newGitProjectName) {
-        axios.post("/api/v1/git/add", {"name":this.newGitProjectName})
+        axios.post(`${url_prefix}/api/v1/git/add`, {"name":this.newGitProjectName})
             .then(resp => {
               this.$message.info(resp.statusText);
             })
@@ -194,7 +198,7 @@ export default {
       this.freshGitProjectList();
     },
     loadFileList() {
-      axios.post("/api/v1/file/list", {})
+      axios.post(`${url_prefix}/api/v1/file/list`, {})
       .then(resp => {
         if (resp.status === 200) {
           console.log(resp);
@@ -206,7 +210,7 @@ export default {
     },
     handleFileDelete(filename) {
      console.log(filename);
-     axios.post("/api/v1/file/delete", {"filename":filename})
+     axios.post(`${url_prefix}/api/v1/file/delete`, {"filename":filename})
          .then(resp => {this.loadFileList();})
          .catch(err => {});
     },

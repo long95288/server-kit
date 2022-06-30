@@ -15,6 +15,8 @@ import (
 	"github.com/rakyll/statik/fs"
 )
 
+const url_prefix = "server-kit/"
+
 // 处理跨域请求,支持options访问
 func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -106,25 +108,25 @@ func StartServer() error {
 	e.Use(Auth())
 
 	// 重定向首页
-	e.GET("/favicon.ico", func(context *gin.Context) {
+	e.GET(path.Join(url_prefix, "/favicon.ico"), func(context *gin.Context) {
 		context.Redirect(http.StatusPermanentRedirect, "/assets/favicon.ico")
 	})
-	e.GET("/", func(context *gin.Context) {
+	e.GET(path.Join(url_prefix, "/"), func(context *gin.Context) {
 		context.Redirect(http.StatusPermanentRedirect, "/assets/index.html")
 	})
 
-	e.Any("/api/v1/chatroom/online", module.ChatroomOnlineWsHandler)
-	e.POST("/api/v1/chatroom/history", module.ChatroomHistoryHandler)
+	e.Any(path.Join(url_prefix, "/api/v1/chatroom/online"), module.ChatroomOnlineWsHandler)
+	e.POST(path.Join(url_prefix, "/api/v1/chatroom/history"), module.ChatroomHistoryHandler)
 
-	e.POST("/api/v1/file/list", module.FileListHandler)
-	e.POST("/api/v1/file/upload", module.FileUploadHandler)
-	e.POST("/api/v1/file/delete", module.FileDeleteHandler)
+	e.POST(path.Join(url_prefix, "/api/v1/file/list"), module.FileListHandler)
+	e.POST(path.Join(url_prefix, "/api/v1/file/upload"), module.FileUploadHandler)
+	e.POST(path.Join(url_prefix, "/api/v1/file/delete"), module.FileDeleteHandler)
 
-	e.POST("/api/v1/git/list", module.GitListHandler)
-	e.POST("/api/v1/git/add", module.GitAddHandler)
+	e.POST(path.Join(url_prefix, "/api/v1/git/list"), module.GitListHandler)
+	e.POST(path.Join(url_prefix, "/api/v1/git/add"), module.GitAddHandler)
 
-	e.StaticFS("/assets/", statikFS)
-	e.StaticFS("/download", http.Dir(""+config.SrvConf.DocPath))
+	e.StaticFS(path.Join(url_prefix, "/assets/"), statikFS)
+	e.StaticFS(path.Join(url_prefix, "/download"), http.Dir(""+config.SrvConf.DocPath))
 
 	if config.SrvConf.TLSAble {
 		log.Printf("run server with TLS addr:%s\n", config.SrvConf.Addr)
