@@ -92,7 +92,7 @@
 
 <script>
 const axios = require('axios');
-const defaultChatUrl = "ws://127.0.0.1:8899/chatws"
+const defaultChatUrl = `ws://${location.host}/api/v1/chatroom/online`;
 export default {
   data: function() {
     return {
@@ -112,7 +112,7 @@ export default {
     }
   },
   created() {
-    this.serverInfo.chatUrl = "ws://" + document.location.host + "/api/v1/chatroom/online";
+    this.serverInfo.chatUrl = "ws://" + location.host + "/api/v1/chatroom/online";
     this.connectServer();
   },
   methods: {

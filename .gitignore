@@ -1,6 +1,8 @@
 _output/
 db/
 *.idea/
+*.vscode/
+**/**/.vscode/
 doc/
 git-server/
 logs/
