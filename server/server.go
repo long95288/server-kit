@@ -1,7 +1,6 @@
 package server
 
 import (
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -89,9 +88,9 @@ func DeInitLog() {
 func StartServer() error {
 	InitPath()
 
-	InitLog()
+	// InitLog()
 	defer func() {
-		DeInitLog()
+		// DeInitLog()
 	}()
 
 	// 静态文件服务器
@@ -100,33 +99,54 @@ func StartServer() error {
 		log.Fatal(err)
 	}
 
-	gin.DefaultWriter = io.MultiWriter(Logfile, os.Stdout)
+	// gin.DefaultWriter = io.MultiWriter(Logfile, os.Stdout)
 
 	// 函数处理服务器
 	e := gin.Default()
 	e.Use(Cors())
-	e.Use(Auth())
 
-	// 重定向首页
-	e.GET(path.Join(url_prefix, "/favicon.ico"), func(context *gin.Context) {
-		context.Redirect(http.StatusPermanentRedirect, "/assets/favicon.ico")
+	if config.SrvConf.Auth {
+		e.Use(Auth())
+	}
+
+	e.GET("/", func(context *gin.Context) {
+		log.Println("redirect to /server-kit/assets/index.html")
+		context.Redirect(http.StatusPermanentRedirect, "/server-kit/assets/index.html")
 	})
-	e.GET(path.Join(url_prefix, "/"), func(context *gin.Context) {
-		context.Redirect(http.StatusPermanentRedirect, "/assets/index.html")
+	e.GET("/favicon.ico", func(context *gin.Context) {
+		context.Redirect(http.StatusPermanentRedirect, "/server-kit/assets/favicon.ico")
 	})
 
-	e.Any(path.Join(url_prefix, "/api/v1/chatroom/online"), module.ChatroomOnlineWsHandler)
-	e.POST(path.Join(url_prefix, "/api/v1/chatroom/history"), module.ChatroomHistoryHandler)
+	// 模块路由
+	programeApi := e.Group(url_prefix)
+	{
+		api := programeApi.Group("/api")
+		{
+			v1 := api.Group("/v1")
+			{
+				chatroomApi := v1.Group("/chatroom")
+				{
+					chatroomApi.Any("/online", module.ChatroomOnlineWsHandler)
+					chatroomApi.POST("/history", module.ChatroomHistoryHandler)
+				}
+				fileApi := v1.Group("/file")
+				{
+					fileApi.POST("/list", module.FileListHandler)
+					fileApi.POST("/upload", module.FileUploadHandler)
+					fileApi.POST("/delete", module.FileDeleteHandler)
+				}
+				gitApi := v1.Group("/git")
+				{
+					gitApi.POST("/list", module.GitListHandler)
+					gitApi.POST("/add", module.GitAddHandler)
+				}
+			}
+		}
+	}
 
-	e.POST(path.Join(url_prefix, "/api/v1/file/list"), module.FileListHandler)
-	e.POST(path.Join(url_prefix, "/api/v1/file/upload"), module.FileUploadHandler)
-	e.POST(path.Join(url_prefix, "/api/v1/file/delete"), module.FileDeleteHandler)
-
-	e.POST(path.Join(url_prefix, "/api/v1/git/list"), module.GitListHandler)
-	e.POST(path.Join(url_prefix, "/api/v1/git/add"), module.GitAddHandler)
-
-	e.StaticFS(path.Join(url_prefix, "/assets/"), statikFS)
-	e.StaticFS(path.Join(url_prefix, "/download"), http.Dir(""+config.SrvConf.DocPath))
+	// 静态文件路由
+	e.StaticFS("/server-kit/assets/", statikFS)
+	e.StaticFS("/server-kit/download/", http.Dir(""+config.SrvConf.DocPath))
 
 	if config.SrvConf.TLSAble {
 		log.Printf("run server with TLS addr:%s\n", config.SrvConf.Addr)

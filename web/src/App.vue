@@ -34,7 +34,7 @@
         <div>
           <el-upload
               ref="uploadbox"
-              action="/api/v1/file/upload"
+              :action="`${serverInfo.urlPrefix}/api/v1/file/upload`"
               :on-preview="handleFilePreview"
               :on-remove="handleFileRemove"
               :on-success="handleFileUploadSuccess"
@@ -53,7 +53,7 @@
               <template slot-scope="scope">
                 <el-button type="danger" icon="el-icon-delete" size="small" @click="handleFileDelete(scope.row.name)"></el-button>
                 <el-button type="success" icon="el-icon-download" size="small" @click="handleFileDownload(scope.row.name)"></el-button>
-                <el-link :href="'/download/'+scope.row.name" :download="scope.row.name" :id="scope.row.name" v-show="false"></el-link>
+                <el-link :href="serverInfo.urlPrefix + '/download/'+scope.row.name" :download="scope.row.name" :id="scope.row.name" v-show="false"></el-link>
               </template>
             </el-table-column>
           </el-table>
@@ -92,13 +92,15 @@
 
 <script>
 const axios = require('axios');
-const defaultChatUrl = `ws://${location.host}/api/v1/chatroom/online`;
-const url_prefix = "server-kit"
+const defaultURLPrefix = 'server-kit'
+const defaultChatUrl = `ws://${location.host}/${defaultURLPrefix}/api/v1/chatroom/online`;
+const defaultApiUrl = `http://${location.host}/${defaultURLPrefix}`
 export default {
   data: function() {
     return {
       serverInfo:{
         chatUrl: defaultChatUrl,
+        urlPrefix: defaultApiUrl
       },
       activeName: 'realtime',
       inputText: '',
@@ -113,9 +115,11 @@ export default {
     }
   },
   created() {
-    this.serverInfo.chatUrl = "ws://" + location.host + "/api/v1/chatroom/online";
+    this.serverInfo.chatUrl = `ws://${location.host}/${defaultURLPrefix}/api/v1/chatroom/online`;
+    this.serverInfo.urlPrefix = `http://${location.host}/${defaultURLPrefix}`
     if(0 === location.href.lastIndexOf("https://")) {
        this.serverInfo.chatUrl = "wss://" + location.host + "/api/v1/chatroom/online";
+       this.serverInfo.urlPrefix = `https://${location.host}/${defaultURLPrefix}`
     }
     this.connectServer();
   },
@@ -139,7 +143,7 @@ export default {
     },
     loadHistoryMsg(pageNum, pageSize) {
       console.log("Load History");
-      axios.post(`${url_prefix}/api/v1/chatroom/history`,
+      axios.post(`${this.serverInfo.urlPrefix}/api/v1/chatroom/history`,
           {
             "page_num": pageNum,
             "page_size": pageSize
@@ -176,7 +180,7 @@ export default {
       this.ws.send(this.inputText);
     },
     freshGitProjectList() {
-      axios.post(`${url_prefix}/api/v1/git/list`, {})
+      axios.post(`${this.serverInfo.urlPrefix}/api/v1/git/list`, {})
       .then(resp => {
         this.gitProjectList = resp.data.body.list;
       })
@@ -186,7 +190,7 @@ export default {
     },
     createNewGitProject() {
       if ('' !== this.newGitProjectName && undefined !== this.newGitProjectName && null !== this.newGitProjectName) {
-        axios.post(`${url_prefix}/api/v1/git/add`, {"name":this.newGitProjectName})
+        axios.post(`${this.serverInfo.urlPrefix}/api/v1/git/add`, {"name":this.newGitProjectName})
             .then(resp => {
               this.$message.info(resp.statusText);
             })
@@ -198,7 +202,7 @@ export default {
       this.freshGitProjectList();
     },
     loadFileList() {
-      axios.post(`${url_prefix}/api/v1/file/list`, {})
+      axios.post(`${this.serverInfo.urlPrefix}/api/v1/file/list`, {})
       .then(resp => {
         if (resp.status === 200) {
           console.log(resp);
@@ -210,7 +214,7 @@ export default {
     },
     handleFileDelete(filename) {
      console.log(filename);
-     axios.post(`${url_prefix}/api/v1/file/delete`, {"filename":filename})
+     axios.post(`${this.serverInfo.urlPrefix}/api/v1/file/delete`, {"filename":filename})
          .then(resp => {this.loadFileList();})
          .catch(err => {});
     },

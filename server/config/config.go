@@ -20,6 +20,7 @@ type ServerConfig struct {
 	DocPath        string `yaml:"doc_path"`
 	LogPath        string `yaml:"log_path"`
 	MsgDBPath      string `yaml:"msg_db_path"`
+	Auth           bool   `yaml:"auth"`
 	Users          []User `yaml:"users"`
 }
 
