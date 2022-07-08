@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -88,9 +89,9 @@ func DeInitLog() {
 func StartServer() error {
 	InitPath()
 
-	// InitLog()
+	InitLog()
 	defer func() {
-		// DeInitLog()
+		DeInitLog()
 	}()
 
 	// 静态文件服务器
@@ -99,7 +100,7 @@ func StartServer() error {
 		log.Fatal(err)
 	}
 
-	// gin.DefaultWriter = io.MultiWriter(Logfile, os.Stdout)
+	gin.DefaultWriter = io.MultiWriter(Logfile, os.Stdout)
 
 	// 函数处理服务器
 	e := gin.Default()
