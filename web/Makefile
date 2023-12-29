@@ -1,6 +1,6 @@
 .PHONY: dist build
 install:
-	@npm install
+	@yarn install
 
 dev: install
 	@npm run dev
